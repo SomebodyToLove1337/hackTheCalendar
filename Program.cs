@@ -15,7 +15,7 @@ var graphClient = new GraphServiceClient(tokenCredential, scopes);
 //bool test = MeineKlassenInstanz.PrüfeAufUrlaub("xyz");
 
 // Hole dir Daten von der GraphAPI
-var me = await graphClient.Me.Calendar.Events.GetAsync((requestConfiguration) =>
+var o365CalRequest = await graphClient.Me.Calendar.Events.GetAsync((requestConfiguration) =>
 {
   //requestConfiguration.QueryParameters.Select = new string[] { "start/dateTime", "end/dateTime", "subject"};
 	requestConfiguration.QueryParameters.Filter = "startsWith(subject,'test2')";
@@ -23,9 +23,18 @@ var me = await graphClient.Me.Calendar.Events.GetAsync((requestConfiguration) =>
   
 });
 
-var subject = me.Value[0].Subject;
-var start = me.Value[0].Start.DateTime;
-var end = me.Value[0].End.DateTime;
+  var subject = o365CalRequest.Value[0].Subject;
+  var start = o365CalRequest.Value[0].Start.DateTime;
+  var end = o365CalRequest.Value[0].End.DateTime;
 
-Console.WriteLine($"Hello {me?.AdditionalData}!" + " " + subject + " - " + start + " - " + end);
+Console.WriteLine(subject + " - " + start + " - " + end);
 
+var parsedStartDate = DateTime.Parse(start);
+var parsedEndDate = DateTime.Parse(end);
+Console.WriteLine("Start Datum:" + parsedStartDate);
+Console.WriteLine("End Datum:" + parsedEndDate);
+
+if (parsedStartDate < parsedEndDate)
+{
+  Console.WriteLine("Start Datum kleiner als Enddatum");
+}
