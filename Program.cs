@@ -22,10 +22,13 @@ var o365CalRequest = await graphClient.Me.Calendar.Events.GetAsync((requestConfi
   requestConfiguration.QueryParameters.Orderby = new string []{ "start/dateTime asc" };
   
 });
-
+if (o365CalRequest.Value[0].Subject is not null)
+{
   var subject = o365CalRequest.Value[0].Subject;
   var start = o365CalRequest.Value[0].Start.DateTime;
   var end = o365CalRequest.Value[0].End.DateTime;
+
+
 
 Console.WriteLine(subject + " - " + start + " - " + end);
 
@@ -37,4 +40,5 @@ Console.WriteLine("End Datum:" + parsedEndDate);
 if (parsedStartDate < parsedEndDate)
 {
   Console.WriteLine("Start Datum kleiner als Enddatum");
+}
 }
