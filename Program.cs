@@ -45,12 +45,16 @@ try
 
 var o365CalRequest2 = await graphClient.Users["64a018d3-7aaa-45fa-a63b-3d6528cbfe09"].GetAsync((requestConfiguration) =>
  {
-    requestConfiguration.QueryParameters.Select = new string[] { "language", "timeZone"};
+    requestConfiguration.QueryParameters.Select = new string[] { "mailboxSettings" };
     //requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{apointmentSubject}')";
     //requestConfiguration.QueryParameters.Orderby = new string[] { "start/dateTime asc" };
 
 }); 
-Console.WriteLine(o365CalRequest2.MailboxSettings);
+var mailboxSettings = o365CalRequest2?.MailboxSettings;
+var outOfOfficeActive = mailboxSettings.AutomaticRepliesSetting.Status;
+var outOfOfficeStart = mailboxSettings.AutomaticRepliesSetting.ScheduledStartDateTime;
+var outOfOfficeEnd = mailboxSettings.AutomaticRepliesSetting.ScheduledEndDateTime;
+Console.WriteLine(outOfOfficeActive + " - " + outOfOfficeStart + " - " + outOfOfficeEnd);
 
     Console.WriteLine(subject + " - " + start + " - " + end);
 
