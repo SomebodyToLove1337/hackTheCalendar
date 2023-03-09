@@ -48,25 +48,34 @@ try
     var subject = o365CalRequest.Value[0].Subject;
     var start = o365CalRequest.Value[0].Start.DateTime;
     var end = o365CalRequest.Value[0].End.DateTime;
+    var timezone = o365CalRequest.Value[0].Start.TimeZone;
 
-//Mailbox Settings sind unterhalb des "Users" kontext, es werden die kompletten MailboxSettings ausgelesen
-var o365CalRequest2 = await graphClient.Users["64a018d3-7aaa-45fa-a63b-3d6528cbfe09"].GetAsync((requestConfiguration) =>
- {
-    requestConfiguration.QueryParameters.Select = new string[] { "mailboxSettings" };
-    //requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{apointmentSubject}')";
-    //requestConfiguration.QueryParameters.Orderby = new string[] { "start/dateTime asc" };
+    // DateTimeTimeZone Werte erstellen
+    var startDTTZ = new DateTimeTimeZone();
+    var endDTTZ = new DateTimeTimeZone();
+    startDTTZ.DateTime = start.ToString();
+    startDTTZ.TimeZone = timezone;
+    endDTTZ.DateTime = end.ToString();
+    endDTTZ.TimeZone = timezone;
 
-}); 
-//Ausgelesene Were in Variablen speichern
-var mailboxSettings = o365CalRequest2?.MailboxSettings;
-var outOfOfficeActive = mailboxSettings.AutomaticRepliesSetting.Status;
-var outOfOfficeStart = mailboxSettings.AutomaticRepliesSetting.ScheduledStartDateTime.DateTime;
-var outOfOfficeEnd = mailboxSettings.AutomaticRepliesSetting.ScheduledEndDateTime.DateTime;
+    //Mailbox Settings sind unterhalb des "Users" kontext, es werden die kompletten MailboxSettings ausgelesen
+    var o365CalRequest2 = await graphClient.Users["64a018d3-7aaa-45fa-a63b-3d6528cbfe09"].GetAsync((requestConfiguration) =>
+     {
+         requestConfiguration.QueryParameters.Select = new string[] { "mailboxSettings" };
+         //requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{apointmentSubject}')";
+         //requestConfiguration.QueryParameters.Orderby = new string[] { "start/dateTime asc" };
 
-//Die Ausgelesenen Werte überprüfen
-Console.WriteLine(outOfOfficeActive + " - " + outOfOfficeStart + " - " + outOfOfficeEnd);
+     });
 
-    Console.WriteLine(subject + " - " + start + " - " + end);
+    //Ausgelesene Werte in Variablen speichern
+    var mailboxSettings = o365CalRequest2?.MailboxSettings;
+    var outOfOfficeActive = mailboxSettings.AutomaticRepliesSetting.Status;
+    var outOfOfficeStart = mailboxSettings.AutomaticRepliesSetting.ScheduledStartDateTime.DateTime;
+    var outOfOfficeEnd = mailboxSettings.AutomaticRepliesSetting.ScheduledEndDateTime.DateTime;
+
+    //Die Ausgelesenen Werte überprüfen
+    Console.WriteLine("OoO:" + outOfOfficeActive + " - " + outOfOfficeStart + " - " + outOfOfficeEnd);
+    Console.WriteLine("Event:" + subject + " - " + start + " - " + end);
 
     //Convertieren des GraphAPI Rückgabewert in DateTime Format
     var parsedStartDate = DateTime.Parse(start);
@@ -79,53 +88,70 @@ Console.WriteLine(outOfOfficeActive + " - " + outOfOfficeStart + " - " + outOfOf
     Console.WriteLine("End Datum OoO:" + parsedEndOoODate);
 
     //erste IF abfrage rein zum testen
-    if (parsedEndOoODate <= parsedEndDate)
+    if (parsedEndOoODate > parsedEndDate)
     {
-        Console.WriteLine("Aktuell ist noch eine OoO Message aktiv!");
+        Console.WriteLine("There is alreay an earlier OoO Message active.");
     }
+    else
+    {
+        //Set OoO message to the absence event
+        var patchUser = new User
+        {
+            MailboxSettings = new MailboxSettings
+            {
+                AutomaticRepliesSetting = new AutomaticRepliesSetting
+                {
+                    ScheduledStartDateTime = startDTTZ,
+                    ScheduledEndDateTime = endDTTZ
+                }
+            }
+        };
+
+        //PATCH the changed configuration to the User/Mailbox Settings - @Benedikt: hier bekomme ich einen Berechtigungsfehler.
+        await graphClient.Users["64a018d3-7aaa-45fa-a63b-3d6528cbfe09"].PatchAsync(patchUser);
+    }
+
     //Mail verschicken
-    
-var requestBody = new Microsoft.Graph.Users.Item.SendMail.SendMailPostRequestBody
-{
-	Message = new Message
-	{
-		Subject = "Out of Office Auto Response has configured",
-		Body = new ItemBody
-		{
-			ContentType = BodyType.Text,
-			Content = $"I configured the Auto-Response from {outOfOfficeStart} to {outOfOfficeEnd}",
-		},
-		ToRecipients = new List<Recipient>
-		{
-			new Recipient
-			{
-				EmailAddress = new EmailAddress
-				{
-					Address = "DiegoS@xby1p.onmicrosoft.com",
-				},
-			},
-		},
-		CcRecipients = new List<Recipient>
-		{
-			new Recipient
-			{
-				EmailAddress = new EmailAddress
-				{
-					Address = "AdminBS@xby1p.onmicrosoft.com", 
-				},
-			},
-		},
-	},
-	SaveToSentItems = true,
-};
-await graphClient.Users["AdminBS@xby1p.onmicrosoft.com"].SendMail.PostAsync(requestBody);
+    var requestBody = new Microsoft.Graph.Users.Item.SendMail.SendMailPostRequestBody
+    {
+        Message = new Message
+        {
+            Subject = "Out of Office Auto Response has been configured",
+            Body = new ItemBody
+            {
+                ContentType = BodyType.Text,
+                Content = $"I configured the Auto-Response from {outOfOfficeStart} to {outOfOfficeEnd}",
+            },
+            ToRecipients = new List<Recipient>
+        {
+            new Recipient
+            {
+                EmailAddress = new EmailAddress
+                {
+                    Address = "DiegoS@xby1p.onmicrosoft.com",
+                },
+            },
+        },
+            CcRecipients = new List<Recipient>
+        {
+            new Recipient
+            {
+                EmailAddress = new EmailAddress
+                {
+                    Address = "AdminBS@xby1p.onmicrosoft.com",
+                },
+            },
+        },
+        },
+        SaveToSentItems = true,
+    };
+    await graphClient.Users["AdminBS@xby1p.onmicrosoft.com"].SendMail.PostAsync(requestBody);
 }
 catch (ArgumentOutOfRangeException ex)
 {
 
     Console.WriteLine($"Did not find an Apointment with the subject: {apointmentSubject}");
     Console.WriteLine(ex);
-
 }
 
 /* var MailboxSettingsDiv =>
