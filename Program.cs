@@ -28,6 +28,11 @@ var clientSecretCredential = new ClientSecretCredential(
 
 var graphClient = new GraphServiceClient(clientSecretCredential, scopes);
 
+//
+//---------------------------------------------------------------------------------------------------------------------------------
+//Alles drüber ist für die Authentifizierung zu Microsoft Graph
+
+//Zu suchenden Betreff definieren
 var apointmentSubject = "test2";
 
 // Hole dir Daten von der GraphAPI
@@ -39,11 +44,12 @@ var o365CalRequest = await graphClient.Users["64a018d3-7aaa-45fa-a63b-3d6528cbfe
 
 });
 try
-{
+{   //Ausgelesene Kalender Daten in Variable speichern
     var subject = o365CalRequest.Value[0].Subject;
     var start = o365CalRequest.Value[0].Start.DateTime;
     var end = o365CalRequest.Value[0].End.DateTime;
 
+//Mailbox Settings sind unterhalb des "Users" kontext, es werden die kompletten MailboxSettings ausgelesen
 var o365CalRequest2 = await graphClient.Users["64a018d3-7aaa-45fa-a63b-3d6528cbfe09"].GetAsync((requestConfiguration) =>
  {
     requestConfiguration.QueryParameters.Select = new string[] { "mailboxSettings" };
@@ -51,15 +57,18 @@ var o365CalRequest2 = await graphClient.Users["64a018d3-7aaa-45fa-a63b-3d6528cbf
     //requestConfiguration.QueryParameters.Orderby = new string[] { "start/dateTime asc" };
 
 }); 
+//Ausgelesene Were in Variablen speichern
 var mailboxSettings = o365CalRequest2?.MailboxSettings;
 var outOfOfficeActive = mailboxSettings.AutomaticRepliesSetting.Status;
 var outOfOfficeStart = mailboxSettings.AutomaticRepliesSetting.ScheduledStartDateTime.DateTime;
 var outOfOfficeEnd = mailboxSettings.AutomaticRepliesSetting.ScheduledEndDateTime.DateTime;
 
+//Die Ausgelesenen Werte überprüfen
 Console.WriteLine(outOfOfficeActive + " - " + outOfOfficeStart + " - " + outOfOfficeEnd);
 
     Console.WriteLine(subject + " - " + start + " - " + end);
 
+    //Convertieren des GraphAPI Rückgabewert in DateTime Format
     var parsedStartDate = DateTime.Parse(start);
     var parsedEndDate = DateTime.Parse(end);
     var parsedStartOoODate = DateTime.Parse(outOfOfficeStart);
@@ -69,11 +78,47 @@ Console.WriteLine(outOfOfficeActive + " - " + outOfOfficeStart + " - " + outOfOf
     Console.WriteLine("Start Datum OoO:" + parsedStartOoODate);
     Console.WriteLine("End Datum OoO:" + parsedEndOoODate);
 
-
+    //erste IF abfrage rein zum testen
     if (parsedEndOoODate <= parsedEndDate)
     {
         Console.WriteLine("Aktuell ist noch eine OoO Message aktiv!");
     }
+    //Mail verschicken
+    
+var requestBody = new Microsoft.Graph.Users.Item.SendMail.SendMailPostRequestBody
+{
+	Message = new Message
+	{
+		Subject = "Out of Office Auto Response has configured",
+		Body = new ItemBody
+		{
+			ContentType = BodyType.Text,
+			Content = $"I configured the Auto-Response from {outOfOfficeStart} to {outOfOfficeEnd}",
+		},
+		ToRecipients = new List<Recipient>
+		{
+			new Recipient
+			{
+				EmailAddress = new EmailAddress
+				{
+					Address = "DiegoS@xby1p.onmicrosoft.com",
+				},
+			},
+		},
+		CcRecipients = new List<Recipient>
+		{
+			new Recipient
+			{
+				EmailAddress = new EmailAddress
+				{
+					Address = "AdminBS@xby1p.onmicrosoft.com", 
+				},
+			},
+		},
+	},
+	SaveToSentItems = true,
+};
+await graphClient.Users["AdminBS@xby1p.onmicrosoft.com"].SendMail.PostAsync(requestBody);
 }
 catch (ArgumentOutOfRangeException ex)
 {
@@ -107,37 +152,3 @@ catch (ArgumentOutOfRangeException ex)
         }
     }, */
 
-var requestBody = new Microsoft.Graph.Users.Item.SendMail.SendMailPostRequestBody
-{
-	Message = new Message
-	{
-		Subject = "Meet for lunch?",
-		Body = new ItemBody
-		{
-			ContentType = BodyType.Text,
-			Content = "The new cafeteria is open.",
-		},
-		ToRecipients = new List<Recipient>
-		{
-			new Recipient
-			{
-				EmailAddress = new EmailAddress
-				{
-					Address = "DiegoS@xby1p.onmicrosoft.com",
-				},
-			},
-		},
-		CcRecipients = new List<Recipient>
-		{
-			new Recipient
-			{
-				EmailAddress = new EmailAddress
-				{
-					Address = "AdminBS@xby1p.onmicrosoft.com", 
-				},
-			},
-		},
-	},
-	SaveToSentItems = true,
-};
-await graphClient.Users["AdminBS@xby1p.onmicrosoft.com"].SendMail.PostAsync(requestBody);
