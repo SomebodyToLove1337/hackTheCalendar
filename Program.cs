@@ -87,7 +87,7 @@ try
     var outOfOfficeStart = mailboxSettings.AutomaticRepliesSetting.ScheduledStartDateTime.DateTime;
     var outOfOfficeEnd = mailboxSettings.AutomaticRepliesSetting.ScheduledEndDateTime.DateTime;
 
-    //Die Ausgelesenen Werte überprüfen
+    //Die ausgelesenen Werte überprüfen
     Console.WriteLine("OoO:" + outOfOfficeActive + " - " + outOfOfficeStart + " - " + outOfOfficeEnd);
     Console.WriteLine("Event:" + subject + " - " + start + " - " + end);
 
@@ -132,7 +132,7 @@ try
         await graphClient.RequestAdapter.SendNoContentAsync(requestInformation);
     }
 
-    //Mail verschicken
+    //Send Mail
     var requestBody = new Microsoft.Graph.Users.Item.SendMail.SendMailPostRequestBody
     {
         Message = new Message
@@ -149,14 +149,14 @@ try
             {
                 EmailAddress = new EmailAddress
                 {
-                    Address = "AdminBS@xby1p.onmicrosoft.com",
+                    Address = $"{o365UserID}",
                 },
             },
         },
         },
         SaveToSentItems = true,
     };
-    await graphClient.Users["64a018d3-7aaa-45fa-a63b-3d6528cbfe09"].SendMail.PostAsync(requestBody);
+    await graphClient.Users[$"{o365UserID}"].SendMail.PostAsync(requestBody);
 }
 catch (ArgumentOutOfRangeException ex)
 {
