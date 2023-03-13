@@ -5,6 +5,8 @@
 using Azure.Identity;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
+using Microsoft.Graph.Models.ODataErrors;
+using Microsoft.Kiota.Abstractions;
 
 var scopes = new[] { "https://graph.microsoft.com/.default" };
 
@@ -32,11 +34,14 @@ var graphClient = new GraphServiceClient(clientSecretCredential, scopes);
 //---------------------------------------------------------------------------------------------------------------------------------
 //Alles drüber ist für die Authentifizierung zu Microsoft Graph
 
-//Zu suchenden Betreff definieren
+//Variablen welche noch in eine config Datei ausgelagert werden sollten
 var apointmentSubject = "test2";
+var o365UserID = "64a018d3-7aaa-45fa-a63b-3d6528cbfe09";
+
+//Hier müsste noch eine Funktion gebaut werden bei welcher die E-Mail ausgelesen wird und die ID zurückgegeben wird
 
 // Hole dir Daten von der GraphAPI
-var o365CalRequest = await graphClient.Users["64a018d3-7aaa-45fa-a63b-3d6528cbfe09"].Events.GetAsync((requestConfiguration) =>
+var o365CalRequest = await graphClient.Users[$"{o365UserID}"].Events.GetAsync((requestConfiguration) =>
 {
     //requestConfiguration.QueryParameters.Select = new string[] { "start/dateTime", "end/dateTime", "subject"};
     requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{apointmentSubject}')";
@@ -59,7 +64,7 @@ try
     endDTTZ.TimeZone = timezone;
 
     //Mailbox Settings sind unterhalb des "Users" kontext, es werden die kompletten MailboxSettings ausgelesen
-    var o365CalRequest2 = await graphClient.Users["64a018d3-7aaa-45fa-a63b-3d6528cbfe09"].GetAsync((requestConfiguration) =>
+    var o365CalRequest2 = await graphClient.Users[$"{o365UserID}"].GetAsync((requestConfiguration) =>
      {
          requestConfiguration.QueryParameters.Select = new string[] { "mailboxSettings" };
          //requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{apointmentSubject}')";
@@ -94,7 +99,26 @@ try
     }
     else
     {
-        //Set OoO message to the absence event
+                    mailboxSettings = new MailboxSettings
+            {
+                AutomaticRepliesSetting = new AutomaticRepliesSetting
+                {
+                    // ScheduledStartDateTime = new DateTimeTimeZone(),
+                    // ScheduledEndDateTime = new DateTimeTimeZone()
+                    Status = AutomaticRepliesStatus.Scheduled,
+                                                  
+                    ScheduledStartDateTime = startDTTZ,
+                    ScheduledEndDateTime = endDTTZ
+                }
+            };
+            var requestInformation = graphClient.Users[$"{o365UserID}"].ToGetRequestInformation();
+            requestInformation.HttpMethod = Method.PATCH;
+            requestInformation.UrlTemplate = "{+baseurl}/users/{user%2Did}/mailboxSettings";//update the template to include /mailBoxSettings
+            requestInformation.SetContentFromParsable<MailboxSettings>(graphClient.RequestAdapter, "application/json", mailboxSettings);
+
+            await graphClient.RequestAdapter.SendNoContentAsync(requestInformation);
+
+ /*        //Set OoO message to the absence event
         var patchUser = new User
         {
             MailboxSettings = new MailboxSettings
@@ -107,8 +131,20 @@ try
             }
         };
 
+
         //PATCH the changed configuration to the User/Mailbox Settings - @Benedikt: hier bekomme ich einen Berechtigungsfehler.
-        await graphClient.Users["64a018d3-7aaa-45fa-a63b-3d6528cbfe09"].PatchAsync(patchUser);
+
+        try
+{
+    await graphClient.Users[$"{o365UserID}"].PatchAsync(patchUser);
+}
+catch (ODataError odataError)
+{
+    Console.WriteLine(odataError.Error.Code);
+    Console.WriteLine(odataError.Error.Message);
+    throw;
+} */
+        
     }
 
     //Mail verschicken
@@ -128,16 +164,6 @@ try
             {
                 EmailAddress = new EmailAddress
                 {
-                    Address = "DiegoS@xby1p.onmicrosoft.com",
-                },
-            },
-        },
-            CcRecipients = new List<Recipient>
-        {
-            new Recipient
-            {
-                EmailAddress = new EmailAddress
-                {
                     Address = "AdminBS@xby1p.onmicrosoft.com",
                 },
             },
@@ -145,7 +171,7 @@ try
         },
         SaveToSentItems = true,
     };
-    await graphClient.Users["AdminBS@xby1p.onmicrosoft.com"].SendMail.PostAsync(requestBody);
+    await graphClient.Users["64a018d3-7aaa-45fa-a63b-3d6528cbfe09"].SendMail.PostAsync(requestBody);
 }
 catch (ArgumentOutOfRangeException ex)
 {
