@@ -99,52 +99,24 @@ try
     }
     else
     {
-                    mailboxSettings = new MailboxSettings
-            {
-                AutomaticRepliesSetting = new AutomaticRepliesSetting
-                {
-                    // ScheduledStartDateTime = new DateTimeTimeZone(),
-                    // ScheduledEndDateTime = new DateTimeTimeZone()
-                    Status = AutomaticRepliesStatus.Scheduled,
-                                                  
-                    ScheduledStartDateTime = startDTTZ,
-                    ScheduledEndDateTime = endDTTZ
-                }
-            };
-            var requestInformation = graphClient.Users[$"{o365UserID}"].ToGetRequestInformation();
-            requestInformation.HttpMethod = Method.PATCH;
-            requestInformation.UrlTemplate = "{+baseurl}/users/{user%2Did}/mailboxSettings";//update the template to include /mailBoxSettings
-            requestInformation.SetContentFromParsable<MailboxSettings>(graphClient.RequestAdapter, "application/json", mailboxSettings);
-
-            await graphClient.RequestAdapter.SendNoContentAsync(requestInformation);
-
- /*        //Set OoO message to the absence event
-        var patchUser = new User
+        mailboxSettings = new MailboxSettings
         {
-            MailboxSettings = new MailboxSettings
+            AutomaticRepliesSetting = new AutomaticRepliesSetting
             {
-                AutomaticRepliesSetting = new AutomaticRepliesSetting
-                {
-                    ScheduledStartDateTime = startDTTZ,
-                    ScheduledEndDateTime = endDTTZ
-                }
+                // ScheduledStartDateTime = new DateTimeTimeZone(),
+                // ScheduledEndDateTime = new DateTimeTimeZone()
+                Status = AutomaticRepliesStatus.Scheduled,
+                ScheduledStartDateTime = startDTTZ,
+                ScheduledEndDateTime = endDTTZ
             }
         };
 
+        var requestInformation = graphClient.Users[$"{o365UserID}"].ToGetRequestInformation();
+        requestInformation.HttpMethod = Method.PATCH;
+        requestInformation.UrlTemplate = "{+baseurl}/users/{user%2Did}/mailboxSettings"; //update the template to include /mailBoxSettings
+        requestInformation.SetContentFromParsable<MailboxSettings>(graphClient.RequestAdapter, "application/json", mailboxSettings);
 
-        //PATCH the changed configuration to the User/Mailbox Settings - @Benedikt: hier bekomme ich einen Berechtigungsfehler.
-
-        try
-{
-    await graphClient.Users[$"{o365UserID}"].PatchAsync(patchUser);
-}
-catch (ODataError odataError)
-{
-    Console.WriteLine(odataError.Error.Code);
-    Console.WriteLine(odataError.Error.Message);
-    throw;
-} */
-        
+        await graphClient.RequestAdapter.SendNoContentAsync(requestInformation);
     }
 
     //Mail verschicken
