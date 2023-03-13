@@ -3,20 +3,29 @@
 // app registration in Azure. An administrator must grant consent
 // to those permissions beforehand.
 using Azure.Identity;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Graph;
 using Microsoft.Graph.Models;
-using Microsoft.Graph.Models.ODataErrors;
 using Microsoft.Kiota.Abstractions;
+using System.Configuration;
+using System.Collections.Specialized;
+using Microsoft.Extensions.Configuration.Json;
+
+var builder = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+
+IConfigurationRoot configuration = builder.Build();
 
 var scopes = new[] { "https://graph.microsoft.com/.default" };
 
 // Multi-tenant apps can use "common",
 // single-tenant apps must use the tenant ID from the Azure portal
-var tenantId = "93e5635d-6391-453c-afb7-1776f501135d";
+var tenantId = configuration.GetSection("Connect:AzureTenantID").Value;
 
 // Values from app registration
-var clientId = "535ea419-74af-4047-9407-cff30fbb9e3e";
-var clientSecret = "zjp8Q~gwQAYuHOXdfbE~TKm4N2ePYq4r5hOjgcj1";
+var clientId = configuration.GetSection("Connect:AzureClientID").Value;
+var clientSecret = configuration.GetSection("Connect:AzureClientSecret").Value;
 
 // using Azure.Identity;
 var options = new TokenCredentialOptions
@@ -35,12 +44,12 @@ var graphClient = new GraphServiceClient(clientSecretCredential, scopes);
 //Alles drüber ist für die Authentifizierung zu Microsoft Graph
 
 //Variablen welche noch in eine config Datei ausgelagert werden sollten
-var apointmentSubject = "test2";
-var o365UserID = "64a018d3-7aaa-45fa-a63b-3d6528cbfe09";
+var apointmentSubject = configuration.GetSection("UserConf:MailSubject").Value;
+var o365UserID = configuration.GetSection("UserConf:UserID").Value;
+var externalMessage = configuration.GetSection("UserConf:ExternalMessage").Value;
+var internalMessage = configuration.GetSection("UserConf:InternalMessage").Value;
 
-//Hier müsste noch eine Funktion gebaut werden bei welcher die E-Mail ausgelesen wird und die ID zurückgegeben wird
-
-// Hole dir Daten von der GraphAPI
+// Get data from GraphAPI
 var o365CalRequest = await graphClient.Users[$"{o365UserID}"].Events.GetAsync((requestConfiguration) =>
 {
     //requestConfiguration.QueryParameters.Select = new string[] { "start/dateTime", "end/dateTime", "subject"};
@@ -92,7 +101,7 @@ try
     Console.WriteLine("Start Datum OoO:" + parsedStartOoODate);
     Console.WriteLine("End Datum OoO:" + parsedEndOoODate);
 
-    //erste IF abfrage rein zum testen
+    //erste IF abfrage rein zum testen  && (outOfOfficeActive != "scheduled" or outOfOfficeActive == "AlwaysEnabled"))
     if (parsedEndOoODate > parsedEndDate)
     {
         Console.WriteLine("There is alreay an earlier OoO Message active.");
@@ -107,7 +116,11 @@ try
                 // ScheduledEndDateTime = new DateTimeTimeZone()
                 Status = AutomaticRepliesStatus.Scheduled,
                 ScheduledStartDateTime = startDTTZ,
-                ScheduledEndDateTime = endDTTZ
+                ScheduledEndDateTime = endDTTZ,
+                //OoF Message aktiv auch für extern (none, ContactsOnly, All)
+                ExternalAudience = ExternalAudienceScope.ContactsOnly,
+                ExternalReplyMessage = externalMessage,
+                InternalReplyMessage = internalMessage
             }
         };
 
