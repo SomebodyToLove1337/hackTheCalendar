@@ -26,7 +26,8 @@ The file looks like this:
         "ExternalMessage": "Greeting Thank you for your email. Im out of the office for the holidays from {outOfOfficeStart} until {outOfOfficeEnd}. Ill reply to your email as soon as I can upon my return.",
         "InternalMessage": "Hello Colleague, im at Holidays till {outOfOfficeEnd}"
       }
-  }```
+  }
+  ```
 
   **AzureTenantID**:
   Enter your TenantID from Azure Active Directory.
