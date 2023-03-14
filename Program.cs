@@ -45,9 +45,19 @@ var graphClient = new GraphServiceClient(clientSecretCredential, scopes);
 
 //Variablen welche noch in eine config Datei ausgelagert werden sollten
 var apointmentSubject = configuration.GetSection("UserConf:MailSubject").Value;
-var o365UserID = configuration.GetSection("UserConf:UserID").Value;
+//var o365UserID = configuration.GetSection("UserConf:UserID").Value;
+var o365UserIDs = configuration.GetSection("UserConf:UserID").Get<string[]>();
 var externalMessage = configuration.GetSection("UserConf:ExternalMessage").Value;
 var internalMessage = configuration.GetSection("UserConf:InternalMessage").Value;
+
+
+foreach (var o365UserID in o365UserIDs)
+{
+    Console.ForegroundColor = ConsoleColor.Yellow;
+    Console.WriteLine("--------------------------------------------");
+    Console.WriteLine("App starting check appointments for: " + o365UserID.ToString());
+    Console.ResetColor();
+
 
 // Get data from GraphAPI
 var o365CalRequest = await graphClient.Users[$"{o365UserID}"].Events.GetAsync((requestConfiguration) =>
@@ -96,15 +106,15 @@ try
     var parsedEndDate = DateTime.Parse(end);
     var parsedStartOoODate = DateTime.Parse(outOfOfficeStart);
     var parsedEndOoODate = DateTime.Parse(outOfOfficeEnd);
-    Console.WriteLine("Start Datum:" + parsedStartDate);
+/*     Console.WriteLine("Start Datum:" + parsedStartDate);
     Console.WriteLine("End Datum:" + parsedEndDate);
     Console.WriteLine("Start Datum OoO:" + parsedStartOoODate);
-    Console.WriteLine("End Datum OoO:" + parsedEndOoODate);
+    Console.WriteLine("End Datum OoO:" + parsedEndOoODate); */
 
     //erste IF abfrage rein zum testen  && (outOfOfficeActive != "scheduled" or outOfOfficeActive == "AlwaysEnabled"))
     if (parsedEndOoODate > parsedEndDate)
     {
-        Console.WriteLine("There is alreay an earlier OoO Message active.");
+        Console.WriteLine("There is already an earlier OoO Message active.");
     }
     else
     {
@@ -119,8 +129,8 @@ try
                 ScheduledEndDateTime = endDTTZ,
                 //OoF Message aktiv auch für extern (none, ContactsOnly, All)
                 ExternalAudience = ExternalAudienceScope.ContactsOnly,
-                ExternalReplyMessage = externalMessage,
-                InternalReplyMessage = internalMessage
+                ExternalReplyMessage = $"{externalMessage}",
+                InternalReplyMessage = $"{internalMessage}"
             }
         };
 
@@ -130,6 +140,17 @@ try
         requestInformation.SetContentFromParsable<MailboxSettings>(graphClient.RequestAdapter, "application/json", mailboxSettings);
 
         await graphClient.RequestAdapter.SendNoContentAsync(requestInformation);
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.WriteLine($"Found an appointment with subject: {apointmentSubject}");
+            Console.WriteLine($"For user: {o365UserID}");
+            Console.WriteLine($"Set auto response from: {parsedStartDate.ToShortDateString()} until {parsedEndDate.ToShortDateString()}");
+            Console.WriteLine();
+            Console.WriteLine("With this internal Message:");
+            Console.WriteLine($"{internalMessage}");
+            Console.WriteLine();
+            Console.WriteLine("And this external Message:");
+            Console.WriteLine($"${externalMessage}");
+            Console.ResetColor();
     }
 
     //Send Mail
@@ -160,9 +181,12 @@ try
 }
 catch (ArgumentOutOfRangeException ex)
 {
-
-    Console.WriteLine($"Did not find an Apointment with the subject: {apointmentSubject}");
-    Console.WriteLine(ex);
+    Console.ForegroundColor = ConsoleColor.Red;
+    Console.WriteLine($"Did not find any apointment with the subject: {apointmentSubject}");
+    Console.WriteLine($"For user: {o365UserID}");
+    Console.ResetColor();
+        
+}
 }
 
 /* var MailboxSettingsDiv =>

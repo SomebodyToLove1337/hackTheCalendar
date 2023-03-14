@@ -1,60 +1,55 @@
-# .NET v7.0 console app connected to Microsoft Graph
+# HackTheCalendar - Automatic set "Auto Response Settings" in every calendar
 
-This is a template for a console application built using .NET v7.0 that connects to Microsoft Graph.
+This small consol app search for appointments with specific subject e.q. "Holidays".
+If it found an appointment he check if another "OoF" Message is allready set.
+If not he will set "OoF" with a specific internal and external message.
 
-## Minimal Path to Awesome 🚀
+## How to configure the app 🚀
 
-Follow the instructions to successfully run your Console app with Microsoft Graph.
+You will find an file names "appsettings.json".
+The file looks like this:
+{
+    "Connect": {
+      "AzureTenantID" :  "YOUR-TENANT-ID", 
+      "AzureClientID": "YOUR-CLIENT-ID",
+      "AzureClientSecret" :  "YOUR-CLIENT-SECRET" 
 
-### 1. Register an Azure Active Directory app
+      },
+      "UserConf": {
+        "MailSubject": "Holiday",
+        "UserID": "yourmail@company.com",
+        "ExternalMessage": "Greeting Thank you for your email. Im out of the office for the holidays from {outOfOfficeStart} until {outOfOfficeEnd}. Ill reply to your email as soon as I can upon my return.",
+        "InternalMessage": "Hello Colleague, im at Holidays till {outOfOfficeEnd}"
+      }
+  }
 
-Every app that uses Azure AD for authentication must be registered with Azure AD. You can register app through Azure Portal or by using Azure CLI. Please follow one of the options to register your app:
+  **AzureTenantID**:
+  Enter your TenantID from Azure Active Directory.
+  You will find it under your registered App.
 
-<details>
-  <summary>Option 1: Register an app by using Azure CLI</summary>
+  **AzureClientID**:
+  Enter your TenantID from Azure Active Directory.
+  You will find it under your registered App.
 
-* [Install Azure CLI](https://learn.microsoft.com/cli/azure/install-azure-cli?view=azure-cli-latest) if you haven't already.
-* Register your app on Microsoft Azure, by creating a new Azure AD app registration:
-  * <details>
-      <summary>On macOS/Linux/in Bash</summary>
+  **AzureClientSecret**:
+  Enter your TenantID from Azure Active Directory.
+  You will find it under your registered App -> certificate and secret.
 
-    * Open terminal and change the working directory to the root of this project
-    * To make the setup script executable, run `chmod +x ./setup.sh`
-    * To register the app, run `./setup.sh`
-    * When prompted, sign in with your **Microsoft 365 developer sandbox account**
+  **MailSubject**:
+  You can enter the subject for the appointment what the app is searching for.
+  The app always looks from Start. So if you enter "Holiday" and your appointment names "Holidays" then he will find it.
+  When you enter "Holiday" as keyword and your appointment names like "My Cool Holiday" the app will NOT find it.
 
-    </details>
-  * <details>
-      <summary>On Windows/in PowerShell</summary>
+  **UserID**:
+  you can enter any Mail Adress from your O365 tenant here.
+  The app will check this email adress.
+  You can add a comma separated list e.q. ["email1@mycompany.com", "email2@mycompany.com", "email3@mycompany.com"]
 
-    * Open PowerShell and change the working directory to the root of this project
-    * To register the app, run `.\setup.ps1`
-    * When prompted, sign in with your **Microsoft 365 developer sandbox account**
+  **ExternalMessage and InternalMessage**:
+  This the part where you can enter your Message for the auto response.
 
-    </details>
-
-</details>
-
-<details>
-
-  <summary>Option 2: Register an app through Azure Portal</summary>
-
-* Go to [Azure Portal](https://portal.azure.com) and login with your testing account that has Application developer or administrator permissions.
-* Select **Azure Active Directory**, and select **App Registrations** from the left side bar. Then select **+ New registration**.
-* Give any name to your app. For **Supported account types**, select **Accounts in any organizational directory (Any Azure AD directory - Multitenant)**.
-* Set the **Redirect URI** drop down to **Public client/native (mobile & desktop)** and enter `http://localhost`. Then, select **Register**.
-
-Navigate to **Overview** tab and make a note of the **Application (client) ID**. You'll use it in the next steps.
-
-</details>
-
-### 2. Run your Console app
-
-* Clone the Hack Together repository to your local workspace or directly download the source code.
-* Open the project folder `dotnet-console-app-microsoft-graph` with the editor of your choice. (Visual Studio Code is recommended.)
-* In Visual Studio Code, press F5 to run the app.
-  ![App output in the debug console in VSCode](./screenshot.png)
-
-## Reference
-
-* [Quickstart: Register an application with the Microsoft identity platform](https://learn.microsoft.com/en-us/azure/active-directory/develop/quickstart-register-app)
+**Azure AD API-Permissions**
+You will need the following permissions for your registered app:
+- Calendars.ReadWrite (Application)
+- Mail.Send (Application)
+- MailboxSettings.ReadWrite (Application)
