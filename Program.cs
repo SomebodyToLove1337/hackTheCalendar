@@ -14,18 +14,19 @@ using Microsoft.Extensions.Configuration.Json;
 var builder = new ConfigurationBuilder()
             .SetBasePath(Directory.GetCurrentDirectory())
             .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-
 IConfigurationRoot configuration = builder.Build();
 
+// Define scopes
 var scopes = new[] { "https://graph.microsoft.com/.default" };
 
-// Multi-tenant apps can use "common",
-// single-tenant apps must use the tenant ID from the Azure portal
+// Read values from configuration file
 var tenantId = configuration.GetSection("Connect:AzureTenantID").Value;
-
-// Values from app registration
 var clientId = configuration.GetSection("Connect:AzureClientID").Value;
 var clientSecret = configuration.GetSection("Connect:AzureClientSecret").Value;
+var appointmentSubject = configuration.GetSection("UserConf:EventSubject").Value;
+var o365UserID = configuration.GetSection("UserConf:UserID").Value;
+var externalMessage = configuration.GetSection("UserConf:ExternalMessage").Value;
+var internalMessage = configuration.GetSection("UserConf:InternalMessage").Value;
 
 // using Azure.Identity;
 var options = new TokenCredentialOptions
@@ -34,9 +35,7 @@ var options = new TokenCredentialOptions
 };
 
 // https://learn.microsoft.com/dotnet/api/azure.identity.clientsecretcredential
-var clientSecretCredential = new ClientSecretCredential(
-    tenantId, clientId, clientSecret, options);
-
+var clientSecretCredential = new ClientSecretCredential(tenantId, clientId, clientSecret, options);
 var graphClient = new GraphServiceClient(clientSecretCredential, scopes);
 
 //
@@ -63,12 +62,12 @@ foreach (var o365UserID in o365UserIDs)
 var o365CalRequest = await graphClient.Users[$"{o365UserID}"].Events.GetAsync((requestConfiguration) =>
 {
     //requestConfiguration.QueryParameters.Select = new string[] { "start/dateTime", "end/dateTime", "subject"};
-    requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{apointmentSubject}')";
+    requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{appointmentSubject}')";
     requestConfiguration.QueryParameters.Orderby = new string[] { "start/dateTime asc" };
 
 });
 try
-{   //Ausgelesene Kalender Daten in Variable speichern
+{   // Store data
     var subject = o365CalRequest.Value[0].Subject;
     var start = o365CalRequest.Value[0].Start.DateTime;
     var end = o365CalRequest.Value[0].End.DateTime;
@@ -86,7 +85,7 @@ try
     var o365CalRequest2 = await graphClient.Users[$"{o365UserID}"].GetAsync((requestConfiguration) =>
      {
          requestConfiguration.QueryParameters.Select = new string[] { "mailboxSettings" };
-         //requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{apointmentSubject}')";
+         //requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{appointmentSubject}')";
          //requestConfiguration.QueryParameters.Orderby = new string[] { "start/dateTime asc" };
 
      });
@@ -127,6 +126,7 @@ try
                 Status = AutomaticRepliesStatus.Scheduled,
                 ScheduledStartDateTime = startDTTZ,
                 ScheduledEndDateTime = endDTTZ,
+
                 //OoF Message aktiv auch für extern (none, ContactsOnly, All)
                 ExternalAudience = ExternalAudienceScope.ContactsOnly,
                 ExternalReplyMessage = $"{externalMessage}",
