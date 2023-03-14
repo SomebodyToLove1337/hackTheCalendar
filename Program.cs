@@ -24,7 +24,7 @@ var tenantId = configuration.GetSection("Connect:AzureTenantID").Value;
 var clientId = configuration.GetSection("Connect:AzureClientID").Value;
 var clientSecret = configuration.GetSection("Connect:AzureClientSecret").Value;
 var appointmentSubject = configuration.GetSection("UserConf:EventSubject").Value;
-var o365UserIDs = configuration.GetSection("UserConf:UserID").Value;
+var o365UserIDs = configuration.GetSection("UserConf:UserID").Get<string[]>();
 var externalMessage = configuration.GetSection("UserConf:ExternalMessage").Value;
 var internalMessage = configuration.GetSection("UserConf:InternalMessage").Value;
 
