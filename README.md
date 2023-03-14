@@ -14,7 +14,7 @@ This is a simple console application built using .NET v7.0 that connects to your
 ## How to configure the app 🚀
 You will find an file names "appsettings.json".
 The file looks like this:
-{
+```{
     "Connect": {
       "AzureTenantID" :  "YOUR-TENANT-ID", 
       "AzureClientID": "YOUR-CLIENT-ID",
@@ -26,7 +26,7 @@ The file looks like this:
         "ExternalMessage": "Greeting Thank you for your email. Im out of the office for the holidays from {outOfOfficeStart} until {outOfOfficeEnd}. Ill reply to your email as soon as I can upon my return.",
         "InternalMessage": "Hello Colleague, im at Holidays till {outOfOfficeEnd}"
       }
-  }
+  }```
 
   **AzureTenantID**:
   Enter your TenantID from Azure Active Directory.
