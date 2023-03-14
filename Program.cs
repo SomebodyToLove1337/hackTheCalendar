@@ -24,7 +24,7 @@ var tenantId = configuration.GetSection("Connect:AzureTenantID").Value;
 var clientId = configuration.GetSection("Connect:AzureClientID").Value;
 var clientSecret = configuration.GetSection("Connect:AzureClientSecret").Value;
 var appointmentSubject = configuration.GetSection("UserConf:EventSubject").Value;
-var o365UserID = configuration.GetSection("UserConf:UserID").Value;
+var o365UserIDs = configuration.GetSection("UserConf:UserID").Value;
 var externalMessage = configuration.GetSection("UserConf:ExternalMessage").Value;
 var internalMessage = configuration.GetSection("UserConf:InternalMessage").Value;
 
@@ -40,14 +40,6 @@ var graphClient = new GraphServiceClient(clientSecretCredential, scopes);
 
 //
 //---------------------------------------------------------------------------------------------------------------------------------
-//Alles drüber ist für die Authentifizierung zu Microsoft Graph
-
-//Variablen welche noch in eine config Datei ausgelagert werden sollten
-var apointmentSubject = configuration.GetSection("UserConf:MailSubject").Value;
-//var o365UserID = configuration.GetSection("UserConf:UserID").Value;
-var o365UserIDs = configuration.GetSection("UserConf:UserID").Get<string[]>();
-var externalMessage = configuration.GetSection("UserConf:ExternalMessage").Value;
-var internalMessage = configuration.GetSection("UserConf:InternalMessage").Value;
 
 
 foreach (var o365UserID in o365UserIDs)
@@ -67,81 +59,81 @@ var o365CalRequest = await graphClient.Users[$"{o365UserID}"].Events.GetAsync((r
 
 });
 try
-{   // Store data
-    var subject = o365CalRequest.Value[0].Subject;
-    var start = o365CalRequest.Value[0].Start.DateTime;
-    var end = o365CalRequest.Value[0].End.DateTime;
-    var timezone = o365CalRequest.Value[0].Start.TimeZone;
+    {   // Store data
+        var subject = o365CalRequest.Value[0].Subject;
+        var start = o365CalRequest.Value[0].Start.DateTime;
+        var end = o365CalRequest.Value[0].End.DateTime;
+        var timezone = o365CalRequest.Value[0].Start.TimeZone;
 
-    // DateTimeTimeZone Werte erstellen
-    var startDTTZ = new DateTimeTimeZone();
-    var endDTTZ = new DateTimeTimeZone();
-    startDTTZ.DateTime = start.ToString();
-    startDTTZ.TimeZone = timezone;
-    endDTTZ.DateTime = end.ToString();
-    endDTTZ.TimeZone = timezone;
+        // DateTimeTimeZone Werte erstellen
+        var startDTTZ = new DateTimeTimeZone();
+        var endDTTZ = new DateTimeTimeZone();
+        startDTTZ.DateTime = start.ToString();
+        startDTTZ.TimeZone = timezone;
+        endDTTZ.DateTime = end.ToString();
+        endDTTZ.TimeZone = timezone;
 
-    //Mailbox Settings sind unterhalb des "Users" kontext, es werden die kompletten MailboxSettings ausgelesen
-    var o365CalRequest2 = await graphClient.Users[$"{o365UserID}"].GetAsync((requestConfiguration) =>
-     {
-         requestConfiguration.QueryParameters.Select = new string[] { "mailboxSettings" };
-         //requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{appointmentSubject}')";
-         //requestConfiguration.QueryParameters.Orderby = new string[] { "start/dateTime asc" };
+        //Mailbox Settings sind unterhalb des "Users" kontext, es werden die kompletten MailboxSettings ausgelesen
+        var o365CalRequest2 = await graphClient.Users[$"{o365UserID}"].GetAsync((requestConfiguration) =>
+         {
+             requestConfiguration.QueryParameters.Select = new string[] { "mailboxSettings" };
+             //requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{appointmentSubject}')";
+             //requestConfiguration.QueryParameters.Orderby = new string[] { "start/dateTime asc" };
 
-     });
+         });
 
-    //Ausgelesene Werte in Variablen speichern
-    var mailboxSettings = o365CalRequest2?.MailboxSettings;
-    var outOfOfficeActive = mailboxSettings.AutomaticRepliesSetting.Status;
-    var outOfOfficeStart = mailboxSettings.AutomaticRepliesSetting.ScheduledStartDateTime.DateTime;
-    var outOfOfficeEnd = mailboxSettings.AutomaticRepliesSetting.ScheduledEndDateTime.DateTime;
+        //Ausgelesene Werte in Variablen speichern
+        var mailboxSettings = o365CalRequest2?.MailboxSettings;
+        var outOfOfficeActive = mailboxSettings.AutomaticRepliesSetting.Status;
+        var outOfOfficeStart = mailboxSettings.AutomaticRepliesSetting.ScheduledStartDateTime.DateTime;
+        var outOfOfficeEnd = mailboxSettings.AutomaticRepliesSetting.ScheduledEndDateTime.DateTime;
 
-    //Die ausgelesenen Werte überprüfen
-    Console.WriteLine("OoO:" + outOfOfficeActive + " - " + outOfOfficeStart + " - " + outOfOfficeEnd);
-    Console.WriteLine("Event:" + subject + " - " + start + " - " + end);
+        //Die ausgelesenen Werte überprüfen
+        Console.WriteLine("OoO:" + outOfOfficeActive + " - " + outOfOfficeStart + " - " + outOfOfficeEnd);
+        Console.WriteLine("Event:" + subject + " - " + start + " - " + end);
 
-    //Convertieren des GraphAPI Rückgabewert in DateTime Format
-    var parsedStartDate = DateTime.Parse(start);
-    var parsedEndDate = DateTime.Parse(end);
-    var parsedStartOoODate = DateTime.Parse(outOfOfficeStart);
-    var parsedEndOoODate = DateTime.Parse(outOfOfficeEnd);
-/*     Console.WriteLine("Start Datum:" + parsedStartDate);
-    Console.WriteLine("End Datum:" + parsedEndDate);
-    Console.WriteLine("Start Datum OoO:" + parsedStartOoODate);
-    Console.WriteLine("End Datum OoO:" + parsedEndOoODate); */
+        //Convertieren des GraphAPI Rückgabewert in DateTime Format
+        var parsedStartDate = DateTime.Parse(start);
+        var parsedEndDate = DateTime.Parse(end);
+        var parsedStartOoODate = DateTime.Parse(outOfOfficeStart);
+        var parsedEndOoODate = DateTime.Parse(outOfOfficeEnd);
+        /*     Console.WriteLine("Start Datum:" + parsedStartDate);
+            Console.WriteLine("End Datum:" + parsedEndDate);
+            Console.WriteLine("Start Datum OoO:" + parsedStartOoODate);
+            Console.WriteLine("End Datum OoO:" + parsedEndOoODate); */
 
-    //erste IF abfrage rein zum testen  && (outOfOfficeActive != "scheduled" or outOfOfficeActive == "AlwaysEnabled"))
-    if (parsedEndOoODate > parsedEndDate)
-    {
-        Console.WriteLine("There is already an earlier OoO Message active.");
-    }
-    else
-    {
-        mailboxSettings = new MailboxSettings
+        //erste IF abfrage rein zum testen  && (outOfOfficeActive != "scheduled" or outOfOfficeActive == "AlwaysEnabled"))
+        if (parsedEndOoODate > parsedEndDate)
         {
-            AutomaticRepliesSetting = new AutomaticRepliesSetting
+            Console.WriteLine("There is already an earlier OoO Message active.");
+        }
+        else
+        {
+            mailboxSettings = new MailboxSettings
             {
-                // ScheduledStartDateTime = new DateTimeTimeZone(),
-                // ScheduledEndDateTime = new DateTimeTimeZone()
-                Status = AutomaticRepliesStatus.Scheduled,
-                ScheduledStartDateTime = startDTTZ,
-                ScheduledEndDateTime = endDTTZ,
+                AutomaticRepliesSetting = new AutomaticRepliesSetting
+                {
+                    // ScheduledStartDateTime = new DateTimeTimeZone(),
+                    // ScheduledEndDateTime = new DateTimeTimeZone()
+                    Status = AutomaticRepliesStatus.Scheduled,
+                    ScheduledStartDateTime = startDTTZ,
+                    ScheduledEndDateTime = endDTTZ,
 
-                //OoF Message aktiv auch für extern (none, ContactsOnly, All)
-                ExternalAudience = ExternalAudienceScope.ContactsOnly,
-                ExternalReplyMessage = $"{externalMessage}",
-                InternalReplyMessage = $"{internalMessage}"
-            }
-        };
+                    //OoF Message aktiv auch für extern (none, ContactsOnly, All)
+                    ExternalAudience = ExternalAudienceScope.ContactsOnly,
+                    ExternalReplyMessage = $"{externalMessage}",
+                    InternalReplyMessage = $"{internalMessage}"
+                }
+            };
 
-        var requestInformation = graphClient.Users[$"{o365UserID}"].ToGetRequestInformation();
-        requestInformation.HttpMethod = Method.PATCH;
-        requestInformation.UrlTemplate = "{+baseurl}/users/{user%2Did}/mailboxSettings"; //update the template to include /mailBoxSettings
-        requestInformation.SetContentFromParsable<MailboxSettings>(graphClient.RequestAdapter, "application/json", mailboxSettings);
+            var requestInformation = graphClient.Users[$"{o365UserID}"].ToGetRequestInformation();
+            requestInformation.HttpMethod = Method.PATCH;
+            requestInformation.UrlTemplate = "{+baseurl}/users/{user%2Did}/mailboxSettings"; //update the template to include /mailBoxSettings
+            requestInformation.SetContentFromParsable<MailboxSettings>(graphClient.RequestAdapter, "application/json", mailboxSettings);
 
-        await graphClient.RequestAdapter.SendNoContentAsync(requestInformation);
+            await graphClient.RequestAdapter.SendNoContentAsync(requestInformation);
             Console.ForegroundColor = ConsoleColor.Green;
-            Console.WriteLine($"Found an appointment with subject: {apointmentSubject}");
+            Console.WriteLine($"Found an appointment with subject: {appointmentSubject}");
             Console.WriteLine($"For user: {o365UserID}");
             Console.WriteLine($"Set auto response from: {parsedStartDate.ToShortDateString()} until {parsedEndDate.ToShortDateString()}");
             Console.WriteLine();
@@ -151,7 +143,8 @@ try
             Console.WriteLine("And this external Message:");
             Console.WriteLine($"${externalMessage}");
             Console.ResetColor();
-    }
+        }
+    
 
     //Send Mail
     var requestBody = new Microsoft.Graph.Users.Item.SendMail.SendMailPostRequestBody
@@ -182,7 +175,7 @@ try
 catch (ArgumentOutOfRangeException ex)
 {
     Console.ForegroundColor = ConsoleColor.Red;
-    Console.WriteLine($"Did not find any apointment with the subject: {apointmentSubject}");
+    Console.WriteLine($"Did not find any apointment with the subject: {appointmentSubject}");
     Console.WriteLine($"For user: {o365UserID}");
     Console.ResetColor();
         
