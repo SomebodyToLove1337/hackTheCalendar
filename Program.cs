@@ -73,6 +73,8 @@ try
         endDTTZ.DateTime = end.ToString();
         endDTTZ.TimeZone = timezone;
 
+
+
         //Mailbox Settings sind unterhalb des "Users" kontext, es werden die kompletten MailboxSettings ausgelesen
         var o365CalRequest2 = await graphClient.Users[$"{o365UserID}"].GetAsync((requestConfiguration) =>
          {
@@ -94,10 +96,12 @@ try
         var parsedEndDate = DateTime.Parse(end);
         var parsedStartOoODate = DateTime.Parse(outOfOfficeStart);
         var parsedEndOoODate = DateTime.Parse(outOfOfficeEnd);
-        /*     Console.WriteLine("Start Datum:" + parsedStartDate);
-            Console.WriteLine("End Datum:" + parsedEndDate);
-            Console.WriteLine("Start Datum OoO:" + parsedStartOoODate);
-            Console.WriteLine("End Datum OoO:" + parsedEndOoODate); */
+        
+        // Replace Placeholder from config file
+        externalMessage = externalMessage.Replace("[start]", parsedStartDate.ToShortDateString());
+        externalMessage = externalMessage.Replace("[end]", parsedEndDate.ToShortDateString());
+        internalMessage = internalMessage.Replace("[start]", parsedStartDate.ToShortDateString());
+        internalMessage = internalMessage.Replace("[end]", parsedEndDate.ToShortDateString());
 
         //erste IF abfrage rein zum testen  && (outOfOfficeActive != "scheduled" or outOfOfficeActive != "AlwaysEnabled"))
         if (parsedEndOoODate > parsedEndDate)
@@ -138,7 +142,7 @@ try
             Console.WriteLine($"{internalMessage}");
             Console.WriteLine();
             Console.WriteLine("And this external Message:");
-            Console.WriteLine($"${externalMessage}");
+            Console.WriteLine($"{externalMessage}");
             Console.ResetColor();
         }
     
@@ -152,7 +156,7 @@ try
             Body = new ItemBody
             {
                 ContentType = BodyType.Text,
-                Content = $"I configured the Auto-Response from {outOfOfficeStart} to {outOfOfficeEnd}",
+                Content = $"I configured the Auto-Reply from {parsedStartDate.ToShortDateString()} to {parsedEndDate.ToShortDateString()}",
             },
             ToRecipients = new List<Recipient>
         {
