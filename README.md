@@ -4,8 +4,8 @@ This is a simple console application built using .NET v7.0 that connects to your
 
 ## Creators 🚀
 
-SomebodyToLove1337
-maxhe87
+[SomebodyToLove1337](https://github.com/SomebodyToLove1337)
+[maxhe87](https://github.com/maxhe87)
 
 ### 1. Register an Azure Active Directory app
 
