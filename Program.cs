@@ -77,9 +77,6 @@ try
         var o365CalRequest2 = await graphClient.Users[$"{o365UserID}"].GetAsync((requestConfiguration) =>
          {
              requestConfiguration.QueryParameters.Select = new string[] { "mailboxSettings" };
-             //requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{appointmentSubject}')";
-             //requestConfiguration.QueryParameters.Orderby = new string[] { "start/dateTime asc" };
-
          });
 
         //Ausgelesene Werte in Variablen speichern
@@ -102,7 +99,7 @@ try
             Console.WriteLine("Start Datum OoO:" + parsedStartOoODate);
             Console.WriteLine("End Datum OoO:" + parsedEndOoODate); */
 
-        //erste IF abfrage rein zum testen  && (outOfOfficeActive != "scheduled" or outOfOfficeActive == "AlwaysEnabled"))
+        //erste IF abfrage rein zum testen  && (outOfOfficeActive != "scheduled" or outOfOfficeActive != "AlwaysEnabled"))
         if (parsedEndOoODate > parsedEndDate)
         {
             Console.WriteLine("There is already an earlier OoO Message active.");
