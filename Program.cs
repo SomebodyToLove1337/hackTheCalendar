@@ -38,10 +38,7 @@ var options = new TokenCredentialOptions
 var clientSecretCredential = new ClientSecretCredential(tenantId, clientId, clientSecret, options);
 var graphClient = new GraphServiceClient(clientSecretCredential, scopes);
 
-//
-//---------------------------------------------------------------------------------------------------------------------------------
-
-
+// main
 foreach (var o365UserID in o365UserIDs)
 {
     Console.ForegroundColor = ConsoleColor.Yellow;
