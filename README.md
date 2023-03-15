@@ -21,10 +21,10 @@ The file looks like this:
       "AzureClientSecret" :  "YOUR-CLIENT-SECRET" 
       },
       "UserConf": {
-        "MailSubject": "Holiday",
+        "MailSubject": "Vacation",
         "UserID": "yourmail@company.com",
-        "ExternalMessage": "Greeting Thank you for your email. Im out of the office for the holidays from {outOfOfficeStart} until {outOfOfficeEnd}. Ill reply to your email as soon as I can upon my return.",
-        "InternalMessage": "Hello Colleague, im at Holidays till {outOfOfficeEnd}"
+        "ExternalMessage": "Greetings! Thank you for your email. Im out of the office from [start] until [end]. Ill reply to your email as soon as I can upon my return.",
+        "InternalMessage": "Hello colleagues, im out of the office till [end]."
       }
   }
   ```
