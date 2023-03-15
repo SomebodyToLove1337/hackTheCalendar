@@ -50,15 +50,15 @@ foreach (var o365UserID in o365UserIDs)
     Console.ResetColor();
 
 
-// Get data from GraphAPI
-var o365CalRequest = await graphClient.Users[$"{o365UserID}"].Events.GetAsync((requestConfiguration) =>
-{
-    //requestConfiguration.QueryParameters.Select = new string[] { "start/dateTime", "end/dateTime", "subject"};
-    requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{appointmentSubject}')";
-    requestConfiguration.QueryParameters.Orderby = new string[] { "start/dateTime asc" };
+    // Get data from GraphAPI
+    var o365CalRequest = await graphClient.Users[$"{o365UserID}"].Events.GetAsync((requestConfiguration) =>
+    {
+        //requestConfiguration.QueryParameters.Select = new string[] { "start/dateTime", "end/dateTime", "subject"};
+        requestConfiguration.QueryParameters.Filter = $"startsWith(subject,'{appointmentSubject}')";
+        requestConfiguration.QueryParameters.Orderby = new string[] { "start/dateTime asc" };
 
-});
-try
+    });
+    try
     {   // Store data
         var subject = o365CalRequest.Value[0].Subject;
         var start = o365CalRequest.Value[0].Start.DateTime;
@@ -96,15 +96,15 @@ try
         var parsedEndDate = DateTime.Parse(end);
         var parsedStartOoODate = DateTime.Parse(outOfOfficeStart);
         var parsedEndOoODate = DateTime.Parse(outOfOfficeEnd);
-        
+
         // Replace Placeholder from config file
         externalMessage = externalMessage.Replace("[start]", parsedStartDate.ToShortDateString());
         externalMessage = externalMessage.Replace("[end]", parsedEndDate.ToShortDateString());
         internalMessage = internalMessage.Replace("[start]", parsedStartDate.ToShortDateString());
         internalMessage = internalMessage.Replace("[end]", parsedEndDate.ToShortDateString());
 
-        //erste IF abfrage rein zum testen  && (outOfOfficeActive != "scheduled" or outOfOfficeActive != "AlwaysEnabled"))
-        if (parsedEndOoODate > parsedEndDate)
+        // Set OoO when there is no active earlier message
+        if (parsedEndOoODate <= parsedEndDate && (outOfOfficeActive.ToString() == "scheduled" || outOfOfficeActive.ToString() == "alwaysEnabled"))
         {
             Console.WriteLine("There is already an earlier OoO Message active.");
         }
@@ -120,7 +120,7 @@ try
                     ScheduledStartDateTime = startDTTZ,
                     ScheduledEndDateTime = endDTTZ,
 
-                    //OoF Message aktiv auch für extern (none, ContactsOnly, All)
+                    //Set external OoO Message active (OPTIONS: none, ContactsOnly, All)
                     ExternalAudience = ExternalAudienceScope.ContactsOnly,
                     ExternalReplyMessage = $"{externalMessage}",
                     InternalReplyMessage = $"{internalMessage}"
@@ -145,20 +145,20 @@ try
             Console.WriteLine($"{externalMessage}");
             Console.ResetColor();
         }
-    
 
-    //Send Mail
-    var requestBody = new Microsoft.Graph.Users.Item.SendMail.SendMailPostRequestBody
-    {
-        Message = new Message
+
+        //Send Mail
+        var requestBody = new Microsoft.Graph.Users.Item.SendMail.SendMailPostRequestBody
         {
-            Subject = "Out of Office Auto Response has been configured",
-            Body = new ItemBody
+            Message = new Message
             {
-                ContentType = BodyType.Text,
-                Content = $"I configured the Auto-Reply from {parsedStartDate.ToShortDateString()} to {parsedEndDate.ToShortDateString()}",
-            },
-            ToRecipients = new List<Recipient>
+                Subject = "Out of Office Auto Response has been configured",
+                Body = new ItemBody
+                {
+                    ContentType = BodyType.Text,
+                    Content = $"I configured the Auto-Reply from {parsedStartDate.ToShortDateString()} to {parsedEndDate.ToShortDateString()}",
+                },
+                ToRecipients = new List<Recipient>
         {
             new Recipient
             {
@@ -168,19 +168,19 @@ try
                 },
             },
         },
-        },
-        SaveToSentItems = true,
-    };
-    await graphClient.Users[$"{o365UserID}"].SendMail.PostAsync(requestBody);
-}
-catch (ArgumentOutOfRangeException ex)
-{
-    Console.ForegroundColor = ConsoleColor.Red;
-    Console.WriteLine($"Did not find any apointment with the subject: {appointmentSubject}");
-    Console.WriteLine($"For user: {o365UserID}");
-    Console.ResetColor();
-        
-}
+            },
+            SaveToSentItems = true,
+        };
+        await graphClient.Users[$"{o365UserID}"].SendMail.PostAsync(requestBody);
+    }
+    catch (ArgumentOutOfRangeException ex)
+    {
+        Console.ForegroundColor = ConsoleColor.Red;
+        Console.WriteLine($"Did not find any apointment with the subject: {appointmentSubject}");
+        Console.WriteLine($"For user: {o365UserID}");
+        Console.ResetColor();
+
+    }
 }
 
 /* var MailboxSettingsDiv =>
