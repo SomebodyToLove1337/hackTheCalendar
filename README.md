@@ -22,7 +22,7 @@ The file looks like this:
       },
       "UserConf": {
         "MailSubject": "Vacation",
-        "UserID": "yourmail@company.com",
+        "UserID": ["your_mail1@company.com", "your_mail2@company.com"],
         "ExternalMessage": "Greetings! Thank you for your email. Im out of the office from [start] until [end]. Ill reply to your email as soon as I can upon my return.",
         "InternalMessage": "Hello colleagues, im out of the office till [end]."
       }
